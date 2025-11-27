@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>รายชื่อพนักงานและญาติขอความช่วยเหลือ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f5f5f5;
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 22px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .toolbar input[type="text"],
+    .toolbar select {
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      min-width: 220px;
+      font-size: 14px;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead {
+      background: #fafafa;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    th {
+      text-align: left;
+      white-space: nowrap;
+    }
+    tr:nth-child(even) td {
+      background: #fcfcfc;
+    }
+
+    .urgent {
+      background: #ffe5e5;
+    }
+    .very-urgent {
+      background: #ffcccc;
+      font-weight: 600;
+    }
+    .resolved {
+      background: #e6f7e6;
+      color: #333;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #eee;
+    }
+    .badge-urgent {
+      background: #ffdddd;
+      color: #c00;
+    }
+    .badge-resolved {
+      background: #d4f4d4;
+      color: #0a7a0a;
+    }
+
+    a.map-link {
+      font-size: 12px;
+      text-decoration: none;
+      color: #0066cc;
+    }
+    a.map-link:hover {
+      text-decoration: underline;
+    }
+
+    .summary {
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: #555;
+    }
+
+    .note-input {
+      width: 100%;
+      min-width: 160px;
+      min-height: 40px;
+      font-size: 12px;
+      padding: 4px 6px;
+      box-sizing: border-box;
+    }
+    .note-actions {
+      margin-top: 4px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .btn {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #999;
+      font-size: 12px;
+      cursor: pointer;
+      background: #f3f3f3;
+    }
+    .btn-primary {
+      border-color: #0066cc;
+      background: #e3f0ff;
+      color: #004a99;
+    }
+    .status-text {
+      font-size: 11px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>รายชื่อพนักงานและญาติขอความช่วยเหลือ</h1>
+
+  <div class="summary">
+    แสดงข้อมูลจาก Google Sheet จำนวน <span id="totalCount">0</span> เคส
+  </div>
+
+  <div class="toolbar">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="ค้นหาเคส / ชื่อ / ที่อยู่ / อาการ / ผู้ติดต่อ / หมายเหตุ"
+    />
+    <select id="urgencyFilter">
+      <option value="">ทุกระดับความเร่งด่วน</option>
+    </select>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>Case</th>
+          <th>ที่อยู่ / พิกัด</th>
+          <th>จำนวนผู้อยู่ในบ้าน</th>
+          <th>สถานะ / อาการ</th>
+          <th>ผู้ติดต่อ</th>
+          <th>แผนที่</th>
+          <th>หมายเหตุ (ระบบ)</th>
+          <th>เร่งด่วน</th>
+          <th>หมายเหตุจากผู้ใช้</th>
+        </tr>
+      </thead>
+      <tbody id="casesTbody">
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // 1) ใส่ URL ของ Google Apps Script Web App ที่ deploy แล้ว
+    const SCRIPT_URL = 'PUT_YOUR_SCRIPT_URL_HERE'; // แก้ตรงนี้
+
+    let allCases = [];
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function getRowClass(urgency) {
+      if (!urgency) return "";
+      if (urgency.includes("ได้รับการช่วยเหลือแล้ว")) return "resolved";
+      if (urgency.includes("เคสด่วนมาก")) return "very-urgent";
+      if (urgency.includes("ด่วน")) return "urgent";
+      return "";
+    }
+
+    function populateUrgencyFilter(cases) {
+      const select = document.getElementById("urgencyFilter");
+      const unique = Array.from(
+        new Set(cases.map(c => (c.urgency || "").toString().trim()).filter(Boolean))
+      ).sort();
+
+      unique.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.textContent = u;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("casesTbody");
+      tbody.innerHTML = "";
+
+      data.forEach(item => {
+        const tr = document.createElement("tr");
+        const rowClass = getRowClass(item.urgency || "");
+        if (rowClass) tr.classList.add(rowClass);
+
+        const id = item.id || "";
+
+        tr.innerHTML = `
+          <td>${escapeHtml(id)}</td>
+          <td>${escapeHtml(item.caseName)}</td>
+          <td>${escapeHtml(item.address)}</td>
+          <td>${escapeHtml(item.peopleCount)}</td>
+          <td>${escapeHtml(item.condition)}</td>
+          <td>${escapeHtml(item.contact)}</td>
+          <td>
+            ${item.mapLink
+              ? `<a class="map-link" href="${escapeHtml(item.mapLink)}" target="_blank" rel="noopener">เปิดแผนที่</a>`
+              : "-"
+            }
+          </td>
+          <td>${escapeHtml(item.note)}</td>
+          <td>
+            ${item.urgency
+              ? `<span class="badge ${item.urgency.includes("ได้รับการช่วยเหลือแล้ว") ? "badge-resolved" : "badge-urgent"}">
+                  ${escapeHtml(item.urgency)}
+                 </span>`
+              : ""
+            }
+          </td>
+          <td>
+            <textarea 
+              class="note-input" 
+              data-id="${escapeHtml(id)}" 
+              placeholder="พิมพ์หมายเหตุเพิ่มเติมที่นี่">${escapeHtml(item.userNote)}</textarea>
+            <div class="note-actions">
+              <button class="btn btn-primary" onclick="saveNote('${escapeHtml(id)}')">บันทึก</button>
+              <span class="status-text" id="status-${escapeHtml(id)}"></span>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function applyFilters() {
+      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const urgency = document.getElementById("urgencyFilter").value;
+
+      const filtered = allCases.filter(c => {
+        if (urgency && String(c.urgency) !== String(urgency)) return false;
+
+        if (keyword) {
+          const haystack = [
+            c.id,
+            c.caseName,
+            c.address,
+            c.peopleCount,
+            c.condition,
+            c.contact,
+            c.note,
+            c.urgency,
+            c.userNote,
+          ]
+            .map(v => (v || "").toString().toLowerCase())
+            .join(" ");
+
+          if (!haystack.includes(keyword)) return false;
+        }
+
+        return true;
+      });
+
+      document.getElementById("totalCount").textContent = filtered.length;
+      renderTable(filtered);
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(SCRIPT_URL);
+        const json = await res.json();
+        if (!json.success) {
+          alert("โหลดข้อมูลไม่สำเร็จ: " + (json.message || ""));
+          return;
+        }
+
+        // json.data เป็น array ของ object ที่ key ตาม header row: id, caseName, ...
+        allCases = json.data;
+
+        document.getElementById("totalCount").textContent = allCases.length;
+        populateUrgencyFilter(allCases);
+        renderTable(allCases);
+
+      } catch (err) {
+        console.error(err);
+        alert("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+      }
+    }
+
+    async function saveNote(id) {
+      if (!id) return;
+
+      const textarea = document.querySelector(`textarea[data-id="${CSS.escape(id)}"]`);
+      const statusEl = document.getElementById(`status-${id}`);
+      if (!textarea || !statusEl) return;
+
+      const userNote = textarea.value.trim();
+
+      statusEl.textContent = "กำลังบันทึก…";
+
+      try {
+        const body = new URLSearchParams();
+        body.append('action', 'saveNote');
+        body.append('id', id);
+        body.append('userNote', userNote);
+
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          },
+          body,
+        });
+
+        const json = await res.json();
+        if (!json.success) {
+          statusEl.textContent = "บันทึกไม่สำเร็จ";
+          console.error(json.message);
+          return;
+        }
+
+        // อัปเดตใน allCases ด้วย
+        const idx = allCases.findIndex(c => String(c.id) === String(id));
+        if (idx !== -1) {
+          allCases[idx].userNote = userNote;
+        }
+
+        statusEl.textContent = "บันทึกแล้ว";
+
+        // ซักพักให้ข้อความหายไป
+        setTimeout(() => {
+          statusEl.textContent = "";
+        }, 2000);
+
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "บันทึกไม่สำเร็จ";
+      }
+    }
+
+    // ทำให้ saveNote เป็น global function (ให้ปุ่มเรียกได้)
+    window.saveNote = saveNote;
+
+    // Event listeners
+    document.getElementById("searchInput").addEventListener("input", applyFilters);
+    document.getElementById("urgencyFilter").addEventListener("change", applyFilters);
+
+    // โหลดข้อมูลตอนเปิดหน้า
+    loadData();
+  </script>
+</body>
+</html>
