@@ -144,7 +144,7 @@
     <input
       type="text"
       id="searchInput"
-      placeholder="ค้นหาเคส / ชื่อ / ที่อยู่ / อาการ / ผู้ติดต่อ / หมายเหตุ"
+      placeholder="ค้นหาเคส / ชื่อ / ที่อยู่ / อาการ / ผู้ติดต่อ / หมายเหตุ / เร่งด่วน"
     />
     <select id="urgencyFilter">
       <option value="">ทุกระดับความเร่งด่วน</option>
@@ -162,9 +162,8 @@
           <th>สถานะ / อาการ</th>
           <th>ผู้ติดต่อ</th>
           <th>แผนที่</th>
-          <th>หมายเหตุ (ระบบ)</th>
-          <th>เร่งด่วน</th>
-          <th>หมายเหตุจากผู้ใช้</th>
+          <th>หมายเหตุ</th>
+          <th>เร่งด่วน (ปัจจุบัน / แก้ไขได้)</th>
         </tr>
       </thead>
       <tbody id="casesTbody">
@@ -173,8 +172,8 @@
   </div>
 
   <script>
-    // 1) ใส่ URL ของ Google Apps Script Web App ที่ deploy แล้ว
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzh7j_cNKF2yHAKxWImJ5USj6vJlwWyvK8uVl3DLd-tceCJUm4PxUPXsukzWBaySVG99g/exec'; // แก้ตรงนี้
+    // ใส่ URL ของ Web App จาก Google Apps Script
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzh7j_cNKF2yHAKxWImJ5USj6vJlwWyvK8uVl3DLd-tceCJUm4PxUPXsukzWBaySVG99g/exec'; // แทนที่ด้วย URL จริง
 
     let allCases = [];
 
@@ -235,20 +234,16 @@
           </td>
           <td>${escapeHtml(item.note)}</td>
           <td>
-            ${item.urgency
-              ? `<span class="badge ${item.urgency.includes("ได้รับการช่วยเหลือแล้ว") ? "badge-resolved" : "badge-urgent"}">
-                  ${escapeHtml(item.urgency)}
-                 </span>`
-              : ""
-            }
-          </td>
-          <td>
-            <textarea 
-              class="note-input" 
-              data-id="${escapeHtml(id)}" 
-              placeholder="พิมพ์หมายเหตุเพิ่มเติมที่นี่">${escapeHtml(item.userNote)}</textarea>
+            <div style="margin-bottom:4px;">
+              <strong>ค่าเดิม:</strong> ${escapeHtml(item.urgency || '-')}
+            </div>
+            <textarea
+              class="note-input"
+              data-id="${escapeHtml(id)}"
+              placeholder="พิมพ์ระดับความเร่งด่วน เช่น เคสด่วนมาก, ด่วน, ได้รับการช่วยเหลือแล้ว ฯลฯ"
+            >${escapeHtml(item.urgency || '')}</textarea>
             <div class="note-actions">
-              <button class="btn btn-primary" onclick="saveNote('${escapeHtml(id)}')">บันทึก</button>
+              <button class="btn btn-primary" onclick="saveUrgency('${escapeHtml(id)}')">บันทึกเร่งด่วน</button>
               <span class="status-text" id="status-${escapeHtml(id)}"></span>
             </div>
           </td>
@@ -274,7 +269,6 @@
             c.contact,
             c.note,
             c.urgency,
-            c.userNote,
           ]
             .map(v => (v || "").toString().toLowerCase())
             .join(" ");
@@ -293,13 +287,24 @@
       try {
         const res = await fetch(SCRIPT_URL);
         const json = await res.json();
+
         if (!json.success) {
           alert("โหลดข้อมูลไม่สำเร็จ: " + (json.message || ""));
           return;
         }
 
-        // json.data เป็น array ของ object ที่ key ตาม header row: id, caseName, ...
-        allCases = json.data;
+        // map จาก key ภาษาไทย → key ภาษาอังกฤษที่ใช้ใน frontend
+        allCases = json.data.map(row => ({
+          id: row['ลำดับ'],
+          caseName: row['Case'],
+          address: row['ที่อยู่ / พิกัด'],
+          peopleCount: row['จำนวนผู้อยู่ในบ้าน'],
+          condition: row['สถานะ / อาการ'],
+          contact: row['ผู้ติดต่อ'],
+          mapLink: row['ลิงก์แผนที่'],
+          note: row['หมายเหตุ'],
+          urgency: row['เร่งด่วน'],
+        }));
 
         document.getElementById("totalCount").textContent = allCases.length;
         populateUrgencyFilter(allCases);
@@ -307,32 +312,29 @@
 
       } catch (err) {
         console.error(err);
-        alert("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+        alert("เกิดข้อผิดพลาดในการโหลดข้อมูล (เช็ค SCRIPT_URL และการตั้งค่า Web App)");
       }
     }
 
-    async function saveNote(id) {
+    async function saveUrgency(id) {
       if (!id) return;
 
       const textarea = document.querySelector(`textarea[data-id="${CSS.escape(id)}"]`);
       const statusEl = document.getElementById(`status-${id}`);
       if (!textarea || !statusEl) return;
 
-      const userNote = textarea.value.trim();
-
+      const urgency = textarea.value.trim();
       statusEl.textContent = "กำลังบันทึก…";
 
       try {
         const body = new URLSearchParams();
-        body.append('action', 'saveNote');
+        body.append('action', 'saveUrgency');
         body.append('id', id);
-        body.append('userNote', userNote);
+        body.append('urgency', urgency);
 
         const res = await fetch(SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
           body,
         });
 
@@ -343,18 +345,14 @@
           return;
         }
 
-        // อัปเดตใน allCases ด้วย
+        // update ค่าใน allCases ด้วย
         const idx = allCases.findIndex(c => String(c.id) === String(id));
         if (idx !== -1) {
-          allCases[idx].userNote = userNote;
+          allCases[idx].urgency = urgency;
         }
 
         statusEl.textContent = "บันทึกแล้ว";
-
-        // ซักพักให้ข้อความหายไป
-        setTimeout(() => {
-          statusEl.textContent = "";
-        }, 2000);
+        setTimeout(() => { statusEl.textContent = ""; }, 2000);
 
       } catch (err) {
         console.error(err);
@@ -362,14 +360,11 @@
       }
     }
 
-    // ทำให้ saveNote เป็น global function (ให้ปุ่มเรียกได้)
-    window.saveNote = saveNote;
+    window.saveUrgency = saveUrgency;
 
-    // Event listeners
     document.getElementById("searchInput").addEventListener("input", applyFilters);
     document.getElementById("urgencyFilter").addEventListener("change", applyFilters);
 
-    // โหลดข้อมูลตอนเปิดหน้า
     loadData();
   </script>
 </body>
