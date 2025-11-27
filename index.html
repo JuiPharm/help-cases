@@ -5,7 +5,6 @@
   <title>Dashboard รายชื่อผู้ต้องการความช่วยเหลือ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <style>
@@ -13,104 +12,151 @@
       font-family: 'Inter', sans-serif;
       background: #f0f2f5;
       margin: 0;
-      padding: 0;
     }
-
     .container {
       max-width: 1200px;
-      margin: auto;
+      margin: 0 auto;
       padding: 20px;
     }
-
     h1 {
       font-size: 26px;
       font-weight: 600;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       color: #222;
     }
-
+    .summary {
+      font-size: 13px;
+      margin-bottom: 10px;
+      color: #555;
+    }
     .toolbar {
       display: flex;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-bottom: 16px;
     }
-
-    .toolbar input, .toolbar select {
-      padding: 10px;
-      font-size: 14px;
+    .toolbar input,
+    .toolbar select {
+      flex: 1 1 200px;
+      padding: 9px 10px;
       border-radius: 8px;
-      border: 1px solid #ccc;
-      width: 100%;
+      border: 1px solid #d0d0d0;
+      font-size: 14px;
+      box-sizing: border-box;
     }
-
     .table-wrapper {
-      background: #fff;
-      padding: 16px;
+      background: #ffffff;
       border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      padding: 12px 12px 4px;
+      overflow-x: auto;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
-
-    th {
+    thead {
       background: #fafafa;
-      padding: 10px;
-      text-align: left;
-      font-weight: 600;
-      border-bottom: 2px solid #eee;
-      white-space: nowrap;
     }
-
-    td {
-      padding: 10px;
+    th, td {
+      padding: 8px 10px;
       border-bottom: 1px solid #eee;
       vertical-align: top;
+      text-align: left;
+    }
+    th {
+      font-weight: 600;
+      font-size: 12px;
+      white-space: nowrap;
+      color: #555;
+    }
+    tr:nth-child(even) td {
+      background: #fcfcfc;
     }
 
-    .urgent-row {
-      background: #ffe1e1 !important;
+    .row-urgent {
+      background-color: #ffe1e1 !important;
+    }
+    .row-done {
+      background-color: #e3f9e5 !important;
     }
 
     textarea {
       width: 100%;
-      padding: 8px;
+      min-height: 48px;
       border-radius: 6px;
-      border: 1px solid #ccc;
-      min-height: 50px;
+      border: 1px solid #d0d0d0;
+      padding: 6px 8px;
+      font-size: 12px;
       resize: vertical;
+      box-sizing: border-box;
     }
-
-    button.save-btn {
+    .save-btn {
       margin-top: 4px;
-      padding: 6px 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
       border: none;
       background: #0066ff;
       color: #fff;
-      border-radius: 6px;
-      cursor: pointer;
       font-size: 12px;
+      cursor: pointer;
     }
-
-    button.save-btn:hover {
-      background: #0052cc;
+    .save-btn:hover {
+      background: #0050cc;
     }
-
     .status-text {
       font-size: 11px;
       color: #555;
       margin-top: 3px;
     }
-
+    select {
+      font-size: 12px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    a {
+      color: #0066ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    .nav a.nav-link {
+      color: #0066ff;
+      text-decoration: none;
+      margin-left: 12px;
+    }
+    .nav a.nav-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-
 <div class="container">
+  <div class="nav">
+    <div>
+      <strong>ระบบช่วยเหลือ</strong>
+    </div>
+    <div>
+      <a class="nav-link" href="index.html">Dashboard</a>
+      <a class="nav-link" href="form.html">แบบฟอร์มขอความช่วยเหลือ</a>
+    </div>
+  </div>
+
   <h1>Dashboard รายชื่อผู้ต้องการความช่วยเหลือ</h1>
+
+  <div class="summary">
+    จำนวนเคสทั้งหมด: <span id="totalCount">0</span>
+  </div>
 
   <div class="toolbar">
     <input id="searchInput" placeholder="ค้นหาชื่อ / ที่อยู่ / อาการ / หมายเหตุ..." />
@@ -119,23 +165,30 @@
       <option value="normal">ปกติ</option>
       <option value="urgent">เร่งด่วน</option>
     </select>
+    <select id="resultFilter">
+      <option value="">ทุกสถานะ Result</option>
+      <option value="ได้รับการช่วยเหลือแล้ว">ได้รับการช่วยเหลือแล้ว</option>
+      <option value="ประสานงานแล้ว รอรับการช่วยเหลือ">ประสานงานแล้ว รอรับการช่วยเหลือ</option>
+      <option value="none">ยังไม่ได้ดำเนินการ</option>
+    </select>
   </div>
 
   <div class="table-wrapper">
     <table>
       <thead>
-        <tr>
-          <th>ลำดับ</th>
-          <th>Case</th>
-          <th>ที่อยู่</th>
-          <th>จำนวนผู้อยู่</th>
-          <th>อาการ</th>
-          <th>ผู้ติดต่อ</th>
-          <th>แผนที่</th>
-          <th>Note (ระบบ)</th>
-          <th>เร่งด่วน</th>
-          <th>หมายเหตุ (ผู้ใช้)</th>
-        </tr>
+      <tr>
+        <th>ลำดับ</th>
+        <th>Case</th>
+        <th>ที่อยู่ / พิกัด</th>
+        <th>จำนวนผู้อยู่ในบ้าน</th>
+        <th>สถานะ / อาการ</th>
+        <th>ผู้ติดต่อ</th>
+        <th>แผนที่</th>
+        <th>Note (ระบบ)</th>
+        <th>ความเร่งด่วน</th>
+        <th>Result</th>
+        <th>หมายเหตุ (ผู้ใช้)</th>
+      </tr>
       </thead>
       <tbody id="casesTbody"></tbody>
     </table>
@@ -143,20 +196,27 @@
 </div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx50ejMtzTemFSl4ErrigZFtoU9XbF9ew_5a2Ipppc1jJDBWBlD32iYfYzTnY5Dcqqc/exec";
+  // ใส่ URL Web App ของคุณ (ลงท้าย /exec)
+  const SCRIPT_URL = "PUT_YOUR_SCRIPT_URL_HERE";
 
   let allCases = [];
 
   function escapeHtml(str) {
     return String(str || "").replace(/[&<>"]/g, c => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;"
     }[c]));
   }
 
   async function loadData() {
     const res = await fetch(SCRIPT_URL);
     const json = await res.json();
-    if (!json.success) return alert("โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ");
+    if (!json.success) {
+      alert("โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ");
+      return;
+    }
 
     allCases = json.data.map(r => ({
       id: r["ลำดับ"],
@@ -168,10 +228,38 @@
       mapLink: r["ลิงก์แผนที่"],
       note: r["Note"],
       userNote: r["หมายเหตุ"],
-      urgency: r["ความเร่งด่วน"] || "normal"
+      urgency: r["ความเร่งด่วน"] || "normal",
+      result: r["Result"] || ""
     }));
 
-    renderTable(allCases);
+    document.getElementById("totalCount").textContent = allCases.length;
+    applyFilters();
+  }
+
+  function setRowClass(tr, item) {
+    tr.classList.remove("row-urgent", "row-done");
+
+    if (item.result === "ได้รับการช่วยเหลือแล้ว") {
+      tr.classList.add("row-done");
+      return;
+    }
+
+    if (item.result === "ประสานงานแล้ว รอรับการช่วยเหลือ") {
+      if (item.urgency === "urgent") {
+        tr.classList.add("row-urgent");
+      }
+      return;
+    }
+
+    if (!item.result || item.result === "") {
+      if (item.urgency === "urgent") {
+        tr.classList.add("row-urgent");
+      }
+    }
+  }
+
+  function trById(id) {
+    return document.querySelector(`tr[data-id="${CSS.escape(String(id))}"]`);
   }
 
   function renderTable(data) {
@@ -180,74 +268,131 @@
 
     data.forEach(item => {
       const tr = document.createElement("tr");
-      if (item.urgency === "urgent") tr.classList.add("urgent-row");
+      tr.dataset.id = item.id;
+      setRowClass(tr, item);
 
       tr.innerHTML = `
-        <td>${item.id}</td>
+        <td>${escapeHtml(item.id)}</td>
         <td>${escapeHtml(item.caseName)}</td>
         <td>${escapeHtml(item.address)}</td>
         <td>${escapeHtml(item.people)}</td>
         <td>${escapeHtml(item.status)}</td>
         <td>${escapeHtml(item.contact)}</td>
-        <td>${item.mapLink ? `<a href="${item.mapLink}" target="_blank">แผนที่</a>` : "-"}</td>
+        <td>${item.mapLink ? `<a href="${escapeHtml(item.mapLink)}" target="_blank">แผนที่</a>` : "-"}</td>
         <td>${escapeHtml(item.note)}</td>
 
         <td>
-          <select onchange="changeUrgency('${item.id}', this.value)">
+          <select class="urgency-select" data-id="${escapeHtml(item.id)}">
             <option value="normal" ${item.urgency === "normal" ? "selected" : ""}>ปกติ</option>
             <option value="urgent" ${item.urgency === "urgent" ? "selected" : ""}>เร่งด่วน</option>
           </select>
         </td>
 
         <td>
-          <textarea id="note-${item.id}">${escapeHtml(item.userNote)}</textarea>
-          <button class="save-btn" onclick="saveNote('${item.id}')">บันทึก</button>
-          <div class="status-text" id="status-${item.id}"></div>
+          <select class="result-select" data-id="${escapeHtml(item.id)}">
+            <option value=""></option>
+            <option value="ได้รับการช่วยเหลือแล้ว"
+              ${item.result === "ได้รับการช่วยเหลือแล้ว" ? "selected" : ""}>
+              ได้รับการช่วยเหลือแล้ว
+            </option>
+            <option value="ประสานงานแล้ว รอรับการช่วยเหลือ"
+              ${item.result === "ประสานงานแล้ว รอรับการช่วยเหลือ" ? "selected" : ""}>
+              ประสานงานแล้ว รอรับการช่วยเหลือ
+            </option>
+          </select>
+        </td>
+
+        <td>
+          <textarea class="note-input" data-id="${escapeHtml(item.id)}">${escapeHtml(item.userNote)}</textarea>
+          <button class="save-btn" onclick="saveRow('${escapeHtml(item.id)}')">บันทึก</button>
+          <div class="status-text" id="status-${escapeHtml(item.id)}"></div>
         </td>
       `;
 
       tbody.appendChild(tr);
     });
+
+    document.querySelectorAll(".urgency-select").forEach(sel => {
+      sel.addEventListener("change", () => {
+        const id = sel.dataset.id;
+        const val = sel.value;
+        const item = allCases.find(c => String(c.id) === String(id));
+        if (!item) return;
+        item.urgency = val;
+        setRowClass(trById(id), item);
+      });
+    });
+
+    document.querySelectorAll(".result-select").forEach(sel => {
+      sel.addEventListener("change", () => {
+        const id = sel.dataset.id;
+        const val = sel.value;
+        const item = allCases.find(c => String(c.id) === String(id));
+        if (!item) return;
+        item.result = val;
+        setRowClass(trById(id), item);
+      });
+    });
   }
 
-  function changeUrgency(id, value) {
-    const row = [...document.querySelectorAll("#casesTbody tr")]
-      .find(r => r.children[0].textContent.trim() === id);
+  async function saveRow(id) {
+    const item = allCases.find(c => String(c.id) === String(id));
+    if (!item) return;
 
-    if (!row) return;
-    if (value === "urgent") row.classList.add("urgent-row");
-    else row.classList.remove("urgent-row");
-  }
+    const urgencySel = document.querySelector(`.urgency-select[data-id="${CSS.escape(String(id))}"]`);
+    const resultSel = document.querySelector(`.result-select[data-id="${CSS.escape(String(id))}"]`);
+    const noteArea = document.querySelector(`.note-input[data-id="${CSS.escape(String(id))}"]`);
+    const statusEl = document.getElementById(`status-${id}`);
 
-  async function saveNote(id) {
-    const urgency = document.querySelector(`select[onchange="changeUrgency('${id}', this.value)"]`).value;
-    const note = document.getElementById(`note-${id}`).value;
+    const urgency = urgencySel ? urgencySel.value : item.urgency;
+    const result = resultSel ? resultSel.value : item.result;
+    const note = noteArea ? noteArea.value : item.userNote;
 
     const body = new URLSearchParams();
+    body.append("action", "update");
     body.append("id", id);
     body.append("note", note);
     body.append("urgency", urgency);
+    body.append("result", result);
 
-    const res = await fetch(SCRIPT_URL, { method: "POST", body });
-    const json = await res.json();
+    try {
+      statusEl.textContent = "กำลังบันทึก...";
+      const res = await fetch(SCRIPT_URL, { method: "POST", body });
+      const json = await res.json();
 
-    const status = document.getElementById(`status-${id}`);
-    if (json.success) {
-      status.textContent = "บันทึกแล้ว";
-      setTimeout(() => status.textContent = "", 2000);
-    } else {
-      status.textContent = "บันทึกผิดพลาด";
+      if (json.success) {
+        item.urgency = urgency;
+        item.result = result;
+        item.userNote = note;
+        setRowClass(trById(id), item);
+        statusEl.textContent = "บันทึกแล้ว";
+        setTimeout(() => statusEl.textContent = "", 2000);
+      } else {
+        statusEl.textContent = "บันทึกไม่สำเร็จ";
+      }
+    } catch (e) {
+      console.error(e);
+      statusEl.textContent = "เกิดข้อผิดพลาดในการบันทึก";
     }
   }
 
   function applyFilters() {
     const text = document.getElementById("searchInput").value.toLowerCase();
-    const urgency = document.getElementById("urgencyFilter").value;
+    const urgencyF = document.getElementById("urgencyFilter").value;
+    const resultF = document.getElementById("resultFilter").value;
 
     const filtered = allCases.filter(c => {
-      if (urgency && c.urgency !== urgency) return false;
+      if (urgencyF && c.urgency !== urgencyF) return false;
 
-      return [
+      if (resultF) {
+        if (resultF === "none") {
+          if (c.result && c.result !== "") return false;
+        } else {
+          if (c.result !== resultF) return false;
+        }
+      }
+
+      const haystack = [
         c.caseName,
         c.address,
         c.people,
@@ -255,17 +400,23 @@
         c.contact,
         c.note,
         c.userNote,
-      ].join(" ").toLowerCase().includes(text);
+        c.result
+      ].join(" ").toLowerCase();
+
+      if (text && !haystack.includes(text)) return false;
+
+      return true;
     });
 
+    document.getElementById("totalCount").textContent = filtered.length;
     renderTable(filtered);
   }
 
   document.getElementById("searchInput").addEventListener("input", applyFilters);
   document.getElementById("urgencyFilter").addEventListener("change", applyFilters);
+  document.getElementById("resultFilter").addEventListener("change", applyFilters);
 
   loadData();
 </script>
-
 </body>
 </html>
