@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>แบบฟอร์มขอความช่วยเหลือ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    .nav a.nav-link {
+      color: #0066ff;
+      text-decoration: none;
+      margin-left: 12px;
+    }
+    .nav a.nav-link:hover {
+      text-decoration: underline;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #222;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+    form {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      padding: 18px 16px;
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: #333;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 13px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+    .btn-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: #0066ff;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0050cc;
+    }
+    .status {
+      font-size: 13px;
+      color: #555;
+    }
+    .status.error {
+      color: #c00;
+    }
+    .status.success {
+      color: #0a7a0a;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="nav">
+    <div>
+      <strong>ระบบช่วยเหลือ</strong>
+    </div>
+    <div>
+      <a class="nav-link" href="index.html">Dashboard</a>
+      <a class="nav-link" href="form.html">แบบฟอร์มขอความช่วยเหลือ</a>
+    </div>
+  </div>
+
+  <h1>แบบฟอร์มขอความช่วยเหลือ</h1>
+  <div class="subtitle">
+    กรอกรายละเอียดผู้ขอความช่วยเหลือให้ครบถ้วน เพื่อให้ทีมสามารถประสานงานได้รวดเร็ว
+  </div>
+
+  <form id="helpForm">
+    <div class="form-group">
+      <label>ชื่อเคส / ชื่อผู้ขอความช่วยเหลือ *</label>
+      <input type="text" name="caseName" required />
+    </div>
+
+    <div class="form-group">
+      <label>ที่อยู่ / พิกัด *</label>
+      <textarea name="address" required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>จำนวนผู้อยู่ในบ้าน</label>
+      <input type="text" name="people" placeholder="เช่น 4 คน (มีผู้สูงอายุ 1 คน, เด็กเล็ก 1 คน)" />
+    </div>
+
+    <div class="form-group">
+      <label>สถานะ / อาการ *</label>
+      <textarea name="status" required placeholder="เช่น น้ำท่วม, ผูป่วยติดเตียง, ขาดอาหาร ฯลฯ"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>ผู้ติดต่อ / เบอร์โทร *</label>
+      <input type="text" name="contact" required />
+    </div>
+
+    <div class="form-group">
+      <label>ลิงก์แผนที่ (ถ้ามี)</label>
+      <input type="url" name="mapLink" placeholder="https://maps.app.goo.gl/...." />
+    </div>
+
+    <div class="form-group">
+      <label>Note (ข้อมูลเพิ่มเติมจากระบบ/ทีม เพื่อใช้ภายหลัง) (ไม่จำเป็น)</label>
+      <textarea name="note"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>หมายเหตุจากผู้แจ้ง (ไม่จำเป็น)</label>
+      <textarea name="userNote"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>ความเร่งด่วน</label>
+      <select name="urgency">
+        <option value="normal">ปกติ</option>
+        <option value="urgent">เร่งด่วน</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button type="submit">ส่งคำขอความช่วยเหลือ</button>
+      <div id="status" class="status"></div>
+    </div>
+  </form>
+</div>
+
+<script>
+  // ใช้ URL เดียวกับ index.html
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx50ejMtzTemFSl4ErrigZFtoU9XbF9ew_5a2Ipppc1jJDBWBlD32iYfYzTnY5Dcqqc/exec";
+
+  const form = document.getElementById("helpForm");
+  const statusEl = document.getElementById("status");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    statusEl.textContent = "";
+    statusEl.className = "status";
+
+    const formData = new FormData(form);
+    const body = new URLSearchParams();
+
+    body.append("action", "create");
+    body.append("caseName", formData.get("caseName") || "");
+    body.append("address", formData.get("address") || "");
+    body.append("people", formData.get("people") || "");
+    body.append("status", formData.get("status") || "");
+    body.append("contact", formData.get("contact") || "");
+    body.append("mapLink", formData.get("mapLink") || "");
+    body.append("note", formData.get("note") || "");
+    body.append("userNote", formData.get("userNote") || "");
+    body.append("urgency", formData.get("urgency") || "normal");
+
+    try {
+      statusEl.textContent = "กำลังส่งข้อมูล...";
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        statusEl.textContent = "ส่งคำขอเรียบร้อยแล้ว (ลำดับเคส: " + json.id + ")";
+        statusEl.classList.add("success");
+        form.reset();
+      } else {
+        statusEl.textContent = "ส่งไม่สำเร็จ: " + (json.message || "");
+        statusEl.classList.add("error");
+      }
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "เกิดข้อผิดพลาดในการส่งข้อมูล";
+      statusEl.classList.add("error");
+    }
+  });
+</script>
+</body>
+</html>
