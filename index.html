@@ -22,12 +22,10 @@
       gap: 8px;
       margin-bottom: 12px;
     }
-    .toolbar input[type="text"],
-    .toolbar select {
+    .toolbar input[type="text"], .toolbar select {
       padding: 6px 8px;
       border-radius: 4px;
       border: 1px solid #ccc;
-      min-width: 220px;
       font-size: 14px;
     }
     .table-wrapper {
@@ -49,90 +47,26 @@
       border-bottom: 1px solid #eee;
       vertical-align: top;
     }
-    th {
-      text-align: left;
-      white-space: nowrap;
-    }
-    tr:nth-child(even) td {
-      background: #fcfcfc;
-    }
 
-    .urgent {
-      background: #ffe5e5;
-    }
-    .very-urgent {
-      background: #ffcccc;
-      font-weight: 600;
-    }
+    .urgent-row { background: #ffe6e6; }
     .badge {
-      display: inline-block;
       padding: 2px 6px;
       border-radius: 999px;
       font-size: 11px;
-      background: #eee;
     }
-    .badge-urgent {
-      background: #ffdddd;
-      color: #c00;
-    }
-    a.map-link {
-      font-size: 12px;
-      text-decoration: none;
-      color: #0066cc;
-    }
-    a.map-link:hover {
-      text-decoration: underline;
-    }
-
-    .summary {
-      font-size: 13px;
-      margin-bottom: 8px;
-      color: #555;
-    }
+    .badge-urgent { background: #ffcccc; color: #c00; }
+    .badge-normal { background: #e6f7ff; color: #005f9e; }
 
     .note-input {
       width: 100%;
-      min-width: 160px;
       min-height: 40px;
       font-size: 12px;
       padding: 4px 6px;
       box-sizing: border-box;
     }
-    .note-actions {
-      margin-top: 4px;
-      display: flex;
-      gap: 4px;
-      align-items: center;
-    }
-    .btn {
-      padding: 4px 8px;
-      border-radius: 4px;
-      border: 1px solid #999;
-      font-size: 12px;
-      cursor: pointer;
-      background: #f3f3f3;
-    }
-    .btn-primary {
-      border-color: #0066cc;
-      background: #e3f0ff;
-      color: #004a99;
-    }
     .status-text {
       font-size: 11px;
       color: #666;
-    }
-
-    .debug-box {
-      margin-top: 12px;
-      font-size: 11px;
-      color: #444;
-      background: #fff7e6;
-      border: 1px solid #ffd591;
-      padding: 6px 8px;
-      border-radius: 4px;
-      white-space: pre-wrap;
-      max-height: 180px;
-      overflow: auto;
     }
   </style>
 </head>
@@ -140,19 +74,15 @@
   <h1>รายชื่อพนักงานและญาติขอความช่วยเหลือ</h1>
 
   <div class="summary">
-    แสดงข้อมูลจากระบบ จำนวน <span id="totalCount">0</span> เคส
+    แสดงข้อมูลทั้งหมด <span id="totalCount">0</span> เคส
   </div>
 
   <div class="toolbar">
-    <input
-      type="text"
-      id="searchInput"
-      placeholder="ค้นหาเคส / ชื่อ / ที่อยู่ / สถานะ / ผู้ติดต่อ / หมายเหตุ"
-    />
+    <input type="text" id="searchInput" placeholder="ค้นหาเคส / ชื่อ / ที่อยู่ / อาการ / ผู้ติดต่อ / หมายเหตุ" />
     <select id="urgencyFilter">
-      <option value="">ทุกระดับความเร่งด่วน</option>
-      <option value="urgent">เฉพาะเคสเร่งด่วน</option>
-      <option value="normal">เฉพาะเคสไม่เร่งด่วน</option>
+      <option value="">ทุกความเร่งด่วน</option>
+      <option value="normal">ปกติ</option>
+      <option value="urgent">เร่งด่วน</option>
     </select>
   </div>
 
@@ -162,66 +92,44 @@
         <tr>
           <th>ลำดับ</th>
           <th>Case</th>
-          <th>ที่อยู่ / พิกัด</th>
+          <th>ที่อยู่</th>
           <th>จำนวนผู้อยู่ในบ้าน</th>
           <th>สถานะ / อาการ</th>
           <th>ผู้ติดต่อ</th>
           <th>แผนที่</th>
-          <th>หมายเหตุ (ระบบ)</th>
-          <th>เร่งด่วน</th>
-          <th>หมายเหตุจากผู้ใช้</th>
+          <th>Note (ระบบ)</th>
+          <th>ความเร่งด่วน</th>
+          <th>หมายเหตุ (ผู้ใช้)</th>
         </tr>
       </thead>
-      <tbody id="casesTbody">
-      </tbody>
+      <tbody id="casesTbody"></tbody>
     </table>
   </div>
 
-  <div id="debug" class="debug-box" style="display:none;"></div>
-
   <script>
-    // ใช้ URL ที่คุณให้มา
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx50ejMtzTemFSl4ErrigZFtoU9XbF9ew_5a2Ipppc1jJDBWBlD32iYfYzTnY5Dcqqc/exec';
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx50ejMtzTemFSl4ErrigZFtoU9XbF9ew_5a2Ipppc1jJDBWBlD32iYfYzTnY5Dcqqc/exec";
 
     let allCases = [];
-    // เก็บหมายเหตุที่ user เพิ่มใน localStorage (ฝั่ง browser)
     let userNotes = {};
 
-    function setDebug(msg) {
-      const box = document.getElementById('debug');
-      box.style.display = 'block';
-      box.textContent = msg;
-      console.log('[DEBUG]', msg);
-    }
-
     function escapeHtml(str) {
-      return String(str || '')
+      return String(str || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function getRowClass(item) {
-      return item.isUrgent ? 'very-urgent' : '';
-    }
-
-    function urgencyLabel(item) {
-      return item.isUrgent ? 'เคสด่วน' : 'ปกติ';
+        .replace(/"/g, "&quot;");
     }
 
     function loadUserNotes() {
       try {
-        const raw = localStorage.getItem('userNotes');
-        userNotes = raw ? JSON.parse(raw) : {};
-      } catch (e) {
+        userNotes = JSON.parse(localStorage.getItem("userNotes") || "{}");
+      } catch {
         userNotes = {};
       }
     }
 
     function saveUserNotes() {
-      localStorage.setItem('userNotes', JSON.stringify(userNotes));
+      localStorage.setItem("userNotes", JSON.stringify(userNotes));
     }
 
     function renderTable(data) {
@@ -229,146 +137,109 @@
       tbody.innerHTML = "";
 
       data.forEach(item => {
-        const tr = document.createElement("tr");
-        const rowClass = getRowClass(item);
-        if (rowClass) tr.classList.add(rowClass);
+        const id = item.id;
+        const userNote = userNotes[id] || "";
+        const urgency = item.urgency || "normal";
 
-        const id = item.id || "";
-        const noteKey = String(id);
-        const noteValue = userNotes[noteKey] || '';
+        const tr = document.createElement("tr");
+        if (urgency === "urgent") tr.classList.add("urgent-row");
 
         tr.innerHTML = `
-          <td>${escapeHtml(id)}</td>
+          <td>${escapeHtml(item.id)}</td>
           <td>${escapeHtml(item.caseName)}</td>
           <td>${escapeHtml(item.address)}</td>
           <td>${escapeHtml(item.people)}</td>
           <td>${escapeHtml(item.status)}</td>
           <td>${escapeHtml(item.contact)}</td>
-          <td>
-            ${item.mapLink && item.mapLink !== '–'
-              ? `<a class="map-link" href="${escapeHtml(item.mapLink)}" target="_blank" rel="noopener">เปิดแผนที่</a>`
-              : "-"
-            }
-          </td>
+          <td>${item.mapLink ? `<a href="${item.mapLink}" target="_blank">ลิงก์</a>` : "-"}</td>
           <td>${escapeHtml(item.note)}</td>
+
           <td>
-            <span class="badge badge-urgent">
-              ${escapeHtml(urgencyLabel(item))}
-            </span>
+            <select data-id="${id}" class="urgency-select">
+              <option value="normal" ${urgency === "normal" ? "selected" : ""}>ปกติ</option>
+              <option value="urgent" ${urgency === "urgent" ? "selected" : ""}>เร่งด่วน</option>
+            </select>
           </td>
+
           <td>
-            <textarea
-              class="note-input"
-              data-id="${escapeHtml(id)}"
-              placeholder="เพิ่มหมายเหตุสำหรับเคสนี้ (บันทึกที่ browser เครื่องนี้)"
-            >${escapeHtml(noteValue)}</textarea>
-            <div class="note-actions">
-              <button class="btn btn-primary" onclick="saveNote('${escapeHtml(id)}')">บันทึกหมายเหตุ</button>
-              <span class="status-text" id="status-${escapeHtml(id)}"></span>
-            </div>
+            <textarea data-id="${id}" class="note-input">${escapeHtml(userNote)}</textarea>
+            <div class="status-text" id="status-${id}"></div>
+            <button onclick="saveNote('${id}')">บันทึก</button>
           </td>
         `;
+
         tbody.appendChild(tr);
       });
     }
 
     function applyFilters() {
-      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const keyword = document.getElementById("searchInput").value.toLowerCase();
       const urgencyFilter = document.getElementById("urgencyFilter").value;
 
-      const filtered = allCases.filter(c => {
-        if (urgencyFilter === 'urgent' && !c.isUrgent) return false;
-        if (urgencyFilter === 'normal' && c.isUrgent) return false;
+      const filtered = allCases.filter(item => {
+        if (urgencyFilter && item.urgency !== urgencyFilter) return false;
 
-        if (keyword) {
-          const noteKey = String(c.id);
-          const userNote = userNotes[noteKey] || '';
+        const searchText = [
+          item.caseName,
+          item.address,
+          item.people,
+          item.status,
+          item.contact,
+          item.note,
+          userNotes[item.id] || ""
+        ].join(" ").toLowerCase();
 
-          const haystack = [
-            c.id,
-            c.caseName,
-            c.address,
-            c.people,
-            c.status,
-            c.contact,
-            c.note,
-            urgencyLabel(c),
-            userNote
-          ]
-            .map(v => (v || "").toString().toLowerCase())
-            .join(" ");
-
-          if (!haystack.includes(keyword)) return false;
-        }
-
-        return true;
+        return searchText.includes(keyword);
       });
 
       document.getElementById("totalCount").textContent = filtered.length;
       renderTable(filtered);
     }
 
-    async function loadData() {
-      try {
-        setDebug('กำลังเรียก: ' + SCRIPT_URL);
-        const res = await fetch(SCRIPT_URL);
-        const text = await res.text();
-
-        setDebug('HTTP ' + res.status + '\n\n' + text.slice(0, 500));
-
-        if (!res.ok) {
-          alert("โหลดข้อมูลไม่สำเร็จ (status " + res.status + ")");
-          return;
-        }
-
-        let json;
-        try {
-          json = JSON.parse(text);
-        } catch (e) {
-          alert("ตอบกลับไม่ใช่ JSON (ดูในกล่อง debug ด้านล่าง)");
-          return;
-        }
-
-        if (!Array.isArray(json)) {
-          alert("โครงสร้างข้อมูลไม่ใช่ array (ดู debug)");
-          setDebug('ไม่ใช่ array: ' + JSON.stringify(json, null, 2));
-          return;
-        }
-
-        // JSON จาก API เป็น array ของ object อยู่แล้ว ใช้ตรง ๆ ได้
-        allCases = json;
-
-        document.getElementById("totalCount").textContent = allCases.length;
-        renderTable(allCases);
-
-      } catch (err) {
-        console.error(err);
-        setDebug('ERROR: ' + err.toString());
-        alert("เกิดข้อผิดพลาดในการโหลดข้อมูล (ดู console / debug box)");
-      }
-    }
-
     function saveNote(id) {
-      if (!id) return;
-      const textarea = document.querySelector(`textarea[data-id="${CSS.escape(id)}"]`);
-      const statusEl = document.getElementById(`status-${id}`);
-      if (!textarea || !statusEl) return;
+      const note = document.querySelector(`textarea[data-id="${id}"]`).value;
+      const urgency = document.querySelector(`select[data-id="${id}"]`).value;
 
-      const val = textarea.value.trim();
-      userNotes[String(id)] = val;
+      userNotes[id] = note;
       saveUserNotes();
 
-      statusEl.textContent = "บันทึกแล้ว (ในเครื่องนี้)";
-      setTimeout(() => { statusEl.textContent = ""; }, 2000);
+      // update urgency ใน memory แต่ไม่ส่งไป server (ตาม requirement)
+      const idx = allCases.findIndex(c => c.id == id);
+      if (idx !== -1) allCases[idx].urgency = urgency;
+
+      document.getElementById(`status-${id}`).textContent = "บันทึกแล้ว";
+      setTimeout(() => {
+        document.getElementById(`status-${id}`).textContent = "";
+      }, 2000);
     }
 
-    window.saveNote = saveNote;
+    async function loadData() {
+      loadUserNotes();
+
+      const res = await fetch(SCRIPT_URL);
+      const json = await res.json();
+
+      // เติม default urgency = normal
+      allCases = json.map(r => ({
+        id: r.id,
+        caseName: r.caseName,
+        address: r.address,
+        people: r.people,
+        status: r.status,
+        contact: r.contact,
+        mapLink: r.mapLink,
+        note: r.note,          // Column H
+        userNote: r.userNote,  // Column I
+        urgency: r.urgency || "normal"
+      }));
+
+      document.getElementById("totalCount").textContent = allCases.length;
+      renderTable(allCases);
+    }
 
     document.getElementById("searchInput").addEventListener("input", applyFilters);
     document.getElementById("urgencyFilter").addEventListener("change", applyFilters);
 
-    // เริ่มต้น
-    loadUserNotes();
     loadData();
   </script>
 </body>
