@@ -1,320 +1,375 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ศูนย์ประสานงานช่วยเหลือผู้ประสบภัย</title>
-    
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/lucide-react/dist/lucide-react.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>รายชื่อพนักงานและญาติขอความช่วยเหลือ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f5f5f5;
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 22px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .toolbar input[type="text"],
+    .toolbar select {
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      min-width: 220px;
+      font-size: 14px;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead {
+      background: #fafafa;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    th {
+      text-align: left;
+      white-space: nowrap;
+    }
+    tr:nth-child(even) td {
+      background: #fcfcfc;
+    }
 
-    <style>
-        body { font-family: 'Sarabun', sans-serif; }
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
-    </style>
+    .urgent {
+      background: #ffe5e5;
+    }
+    .very-urgent {
+      background: #ffcccc;
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #eee;
+    }
+    .badge-urgent {
+      background: #ffdddd;
+      color: #c00;
+    }
+    a.map-link {
+      font-size: 12px;
+      text-decoration: none;
+      color: #0066cc;
+    }
+    a.map-link:hover {
+      text-decoration: underline;
+    }
+
+    .summary {
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: #555;
+    }
+
+    .note-input {
+      width: 100%;
+      min-width: 160px;
+      min-height: 40px;
+      font-size: 12px;
+      padding: 4px 6px;
+      box-sizing: border-box;
+    }
+    .note-actions {
+      margin-top: 4px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .btn {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #999;
+      font-size: 12px;
+      cursor: pointer;
+      background: #f3f3f3;
+    }
+    .btn-primary {
+      border-color: #0066cc;
+      background: #e3f0ff;
+      color: #004a99;
+    }
+    .status-text {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .debug-box {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #444;
+      background: #fff7e6;
+      border: 1px solid #ffd591;
+      padding: 6px 8px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      max-height: 180px;
+      overflow: auto;
+    }
+  </style>
 </head>
-<body class="bg-slate-100">
-    <div id="root"></div>
+<body>
+  <h1>รายชื่อพนักงานและญาติขอความช่วยเหลือ</h1>
 
-    <script type="text/babel">
-        // ==========================================
-        // CONFIGURATION
-        // ==========================================
-        // ใส่ URL ที่ได้จากการ Deploy Google Apps Script ตรงนี้
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx50ejMtzTemFSl4ErrigZFtoU9XbF9ew_5a2Ipppc1jJDBWBlD32iYfYzTnY5Dcqqc/exec"; 
-        // ==========================================
+  <div class="summary">
+    แสดงข้อมูลจากระบบ จำนวน <span id="totalCount">0</span> เคส
+  </div>
 
-        const { useState, useEffect, useMemo } = React;
-        const { AlertTriangle, MapPin, Phone, Search, Save, Users, Activity, Filter, ExternalLink, LifeBuoy, Loader2 } = LucideReact;
+  <div class="toolbar">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="ค้นหาเคส / ชื่อ / ที่อยู่ / สถานะ / ผู้ติดต่อ / หมายเหตุ"
+    />
+    <select id="urgencyFilter">
+      <option value="">ทุกระดับความเร่งด่วน</option>
+      <option value="urgent">เฉพาะเคสเร่งด่วน</option>
+      <option value="normal">เฉพาะเคสไม่เร่งด่วน</option>
+    </select>
+  </div>
 
-        function App() {
-            const [requests, setRequests] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [searchTerm, setSearchTerm] = useState('');
-            const [filterUrgent, setFilterUrgent] = useState(false);
-            const [editingNotes, setEditingNotes] = useState({});
-            const [saving, setSaving] = useState(null); // id being saved
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>Case</th>
+          <th>ที่อยู่ / พิกัด</th>
+          <th>จำนวนผู้อยู่ในบ้าน</th>
+          <th>สถานะ / อาการ</th>
+          <th>ผู้ติดต่อ</th>
+          <th>แผนที่</th>
+          <th>หมายเหตุ (ระบบ)</th>
+          <th>เร่งด่วน</th>
+          <th>หมายเหตุจากผู้ใช้</th>
+        </tr>
+      </thead>
+      <tbody id="casesTbody">
+      </tbody>
+    </table>
+  </div>
 
-            // Fetch Data from Google Sheets via App Script
-            const fetchData = async () => {
-                try {
-                    const response = await fetch(GAS_API_URL);
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        setRequests(data);
-                    }
-                    setLoading(false);
-                } catch (error) {
-                    console.error("Error fetching data:", error);
-                    setLoading(false);
-                }
-            };
+  <div id="debug" class="debug-box" style="display:none;"></div>
 
-            useEffect(() => {
-                fetchData();
-                // Optional: Auto-refresh every 30 seconds
-                const interval = setInterval(fetchData, 30000);
-                return () => clearInterval(interval);
-            }, []);
+  <script>
+    // ใช้ URL ที่คุณให้มา
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx50ejMtzTemFSl4ErrigZFtoU9XbF9ew_5a2Ipppc1jJDBWBlD32iYfYzTnY5Dcqqc/exec';
 
-            // Handle Update to Google Sheets
-            const updateGoogleSheet = async (payload) => {
-                // Google Apps Script Web App doesn't handle complex CORS preflight well for simple deployments,
-                // so we use 'no-cors' for fire-and-forget or standard POST text/plain.
-                // Using standard fetch with redirect: 'follow' is usually best for GAS.
-                try {
-                    await fetch(GAS_API_URL, {
-                        method: "POST",
-                        body: JSON.stringify(payload)
-                    });
-                    // Refresh local data immediately for UI responsiveness
-                    // In a real app, we might wait for confirmation, but for speed we update local state too
-                } catch (error) {
-                    console.error("Error updating:", error);
-                    alert("เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่");
-                }
-            };
+    let allCases = [];
+    // เก็บหมายเหตุที่ user เพิ่มใน localStorage (ฝั่ง browser)
+    let userNotes = {};
 
-            const handleToggleUrgent = async (id, currentStatus) => {
-                const newStatus = !currentStatus;
-                
-                // Optimistic Update
-                setRequests(prev => prev.map(r => r.id === id ? { ...r, isUrgent: newStatus } : r));
+    function setDebug(msg) {
+      const box = document.getElementById('debug');
+      box.style.display = 'block';
+      box.textContent = msg;
+      console.log('[DEBUG]', msg);
+    }
 
-                await updateGoogleSheet({
-                    action: 'toggleUrgent',
-                    id: id,
-                    value: newStatus
-                });
-            };
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
 
-            const handleNoteChange = (id, text) => {
-                setEditingNotes(prev => ({ ...prev, [id]: text }));
-            };
+    function getRowClass(item) {
+      return item.isUrgent ? 'very-urgent' : '';
+    }
 
-            const handleSaveNote = async (id) => {
-                const newNote = editingNotes[id];
-                if (newNote === undefined) return;
+    function urgencyLabel(item) {
+      return item.isUrgent ? 'เคสด่วน' : 'ปกติ';
+    }
 
-                setSaving(id);
-                
-                // Optimistic Update
-                setRequests(prev => prev.map(r => r.id === id ? { ...r, note: newNote } : r));
+    function loadUserNotes() {
+      try {
+        const raw = localStorage.getItem('userNotes');
+        userNotes = raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        userNotes = {};
+      }
+    }
 
-                await updateGoogleSheet({
-                    action: 'updateNote',
-                    id: id,
-                    value: newNote
-                });
+    function saveUserNotes() {
+      localStorage.setItem('userNotes', JSON.stringify(userNotes));
+    }
 
-                setEditingNotes(prev => {
-                    const next = { ...prev };
-                    delete next[id];
-                    return next;
-                });
-                setSaving(null);
-            };
+    function renderTable(data) {
+      const tbody = document.getElementById("casesTbody");
+      tbody.innerHTML = "";
 
-            // Derived State
-            const filteredRequests = useMemo(() => {
-                return requests.filter(req => {
-                    const s = searchTerm.toLowerCase();
-                    const matchesSearch = (req.caseName || '').toLowerCase().includes(s) || 
-                                          (req.address || '').toLowerCase().includes(s);
-                    const matchesFilter = filterUrgent ? req.isUrgent : true;
-                    return matchesSearch && matchesFilter;
-                }).sort((a, b) => {
-                    if (a.isUrgent === b.isUrgent) return parseInt(a.id) - parseInt(b.id);
-                    return a.isUrgent ? -1 : 1;
-                });
-            }, [requests, searchTerm, filterUrgent]);
+      data.forEach(item => {
+        const tr = document.createElement("tr");
+        const rowClass = getRowClass(item);
+        if (rowClass) tr.classList.add(rowClass);
 
-            const stats = {
-                total: requests.length,
-                urgent: requests.filter(r => r.isUrgent).length,
-                normal: requests.filter(r => !r.isUrgent).length
-            };
+        const id = item.id || "";
+        const noteKey = String(id);
+        const noteValue = userNotes[noteKey] || '';
 
-            if (loading) {
-                return (
-                    <div className="flex items-center justify-center min-h-screen bg-slate-50">
-                        <div className="text-center">
-                            <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
-                            <p className="text-slate-500">กำลังเชื่อมต่อฐานข้อมูล...</p>
-                        </div>
-                    </div>
-                );
+        tr.innerHTML = `
+          <td>${escapeHtml(id)}</td>
+          <td>${escapeHtml(item.caseName)}</td>
+          <td>${escapeHtml(item.address)}</td>
+          <td>${escapeHtml(item.people)}</td>
+          <td>${escapeHtml(item.status)}</td>
+          <td>${escapeHtml(item.contact)}</td>
+          <td>
+            ${item.mapLink && item.mapLink !== '–'
+              ? `<a class="map-link" href="${escapeHtml(item.mapLink)}" target="_blank" rel="noopener">เปิดแผนที่</a>`
+              : "-"
             }
+          </td>
+          <td>${escapeHtml(item.note)}</td>
+          <td>
+            <span class="badge badge-urgent">
+              ${escapeHtml(urgencyLabel(item))}
+            </span>
+          </td>
+          <td>
+            <textarea
+              class="note-input"
+              data-id="${escapeHtml(id)}"
+              placeholder="เพิ่มหมายเหตุสำหรับเคสนี้ (บันทึกที่ browser เครื่องนี้)"
+            >${escapeHtml(noteValue)}</textarea>
+            <div class="note-actions">
+              <button class="btn btn-primary" onclick="saveNote('${escapeHtml(id)}')">บันทึกหมายเหตุ</button>
+              <span class="status-text" id="status-${escapeHtml(id)}"></span>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
 
-            return (
-                <div className="min-h-screen bg-slate-100 font-sans text-slate-900 pb-10">
-                    {/* Header */}
-                    <header className="bg-blue-700 text-white shadow-lg sticky top-0 z-20">
-                        <div className="max-w-6xl mx-auto px-4 py-4">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div>
-                                    <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-                                        <LifeBuoy className="h-8 w-8 text-yellow-300" />
-                                        ศูนย์ช่วยเหลือผู้ประสบภัย
-                                    </h1>
-                                    <p className="text-blue-200 text-sm mt-1">รายชื่อพนักงานและญาติ</p>
-                                </div>
-                                
-                                <div className="flex gap-2">
-                                    <div className="bg-blue-800/50 px-4 py-2 rounded-lg text-center backdrop-blur-sm border border-blue-500/30">
-                                        <div className="text-xs text-blue-200 uppercase tracking-wider">ทั้งหมด</div>
-                                        <div className="font-bold text-xl">{stats.total}</div>
-                                    </div>
-                                    <div className="bg-red-500/90 px-4 py-2 rounded-lg text-center shadow-sm">
-                                        <div className="text-xs text-white uppercase tracking-wider">เร่งด่วน</div>
-                                        <div className="font-bold text-xl">{stats.urgent}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </header>
+    function applyFilters() {
+      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const urgencyFilter = document.getElementById("urgencyFilter").value;
 
-                    <main className="max-w-6xl mx-auto px-4 py-6">
-                        {/* Search & Filter */}
-                        <div className="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between sticky top-24 z-10 border border-slate-200">
-                            <div className="relative w-full md:w-96">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
-                                <input
-                                    type="text"
-                                    placeholder="ค้นหาชื่อ, ที่อยู่..."
-                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
+      const filtered = allCases.filter(c => {
+        if (urgencyFilter === 'urgent' && !c.isUrgent) return false;
+        if (urgencyFilter === 'normal' && c.isUrgent) return false;
 
-                            <button
-                                onClick={() => setFilterUrgent(!filterUrgent)}
-                                className={`w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-all ${
-                                    filterUrgent 
-                                    ? 'bg-red-50 border-red-200 text-red-700 font-semibold shadow-inner' 
-                                    : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
-                                }`}
-                            >
-                                <Filter className="h-4 w-4" />
-                                {filterUrgent ? 'แสดงเฉพาะเร่งด่วน' : 'แสดงทั้งหมด'}
-                            </button>
-                        </div>
+        if (keyword) {
+          const noteKey = String(c.id);
+          const userNote = userNotes[noteKey] || '';
 
-                        {/* Card Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {filteredRequests.map((req) => (
-                                <div 
-                                    key={req.id} 
-                                    className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${
-                                        req.isUrgent ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-green-500'
-                                    }`}
-                                >
-                                    {/* Card Header */}
-                                    <div className="p-4 border-b border-slate-100 flex justify-between items-start gap-4 bg-slate-50/50">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded font-mono">#{req.id}</span>
-                                                <h3 className="font-bold text-lg text-slate-800 leading-tight">{req.caseName}</h3>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-slate-500">
-                                                <Users className="h-4 w-4" />
-                                                {req.people}
-                                            </div>
-                                        </div>
-                                        
-                                        <button
-                                            onClick={() => handleToggleUrgent(req.id, req.isUrgent)}
-                                            className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors w-20 flex-shrink-0 ${
-                                                req.isUrgent 
-                                                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                                : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                                            }`}
-                                        >
-                                            <AlertTriangle className={`h-6 w-6 mb-1 ${req.isUrgent ? 'fill-current' : ''}`} />
-                                            <span className="text-xs font-bold">{req.isUrgent ? 'เร่งด่วน' : 'ปกติ'}</span>
-                                        </button>
-                                    </div>
+          const haystack = [
+            c.id,
+            c.caseName,
+            c.address,
+            c.people,
+            c.status,
+            c.contact,
+            c.note,
+            urgencyLabel(c),
+            userNote
+          ]
+            .map(v => (v || "").toString().toLowerCase())
+            .join(" ");
 
-                                    {/* Card Content */}
-                                    <div className="p-4 space-y-3">
-                                        <div className="flex items-start gap-3">
-                                            <Activity className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                                            <div>
-                                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">อาการ</span>
-                                                <p className={`text-sm font-medium ${req.isUrgent ? 'text-red-600' : 'text-slate-700'}`}>{req.status}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start gap-3">
-                                            <MapPin className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                                            <div className="flex-1 min-w-0">
-                                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">ที่อยู่</span>
-                                                <p className="text-sm text-slate-700 break-words mb-1">{req.address}</p>
-                                                {req.mapLink && req.mapLink.startsWith('http') && (
-                                                    <a href={req.mapLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded">
-                                                        <ExternalLink className="h-3 w-3" /> เปิด Google Maps
-                                                    </a>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start gap-3">
-                                            <Phone className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                                            <div>
-                                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">ติดต่อ</span>
-                                                <p className="text-sm text-slate-700 select-all font-mono">{req.contact}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Notes Section */}
-                                        <div className="mt-4 pt-4 border-t border-slate-100">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <label className="text-xs font-bold text-slate-500 uppercase">หมายเหตุเพิ่มเติม</label>
-                                                {editingNotes[req.id] !== undefined && editingNotes[req.id] !== req.note && (
-                                                    <span className="text-xs text-orange-500 animate-pulse">ยังไม่บันทึก</span>
-                                                )}
-                                            </div>
-                                            <div className="relative">
-                                                <textarea
-                                                    className="w-full text-sm p-3 bg-yellow-50/50 border border-yellow-200 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:outline-none transition-all resize-none text-slate-700 min-h-[80px]"
-                                                    value={editingNotes[req.id] !== undefined ? editingNotes[req.id] : (req.note || '')}
-                                                    onChange={(e) => handleNoteChange(req.id, e.target.value)}
-                                                    placeholder="เพิ่มรายละเอียด..."
-                                                />
-                                                {(editingNotes[req.id] !== undefined && editingNotes[req.id] !== req.note) && (
-                                                    <button
-                                                        onClick={() => handleSaveNote(req.id)}
-                                                        disabled={saving === req.id}
-                                                        className="absolute bottom-2 right-2 bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 shadow-sm transition-colors disabled:opacity-50"
-                                                    >
-                                                        {saving === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </main>
-                </div>
-            );
+          if (!haystack.includes(keyword)) return false;
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        return true;
+      });
+
+      document.getElementById("totalCount").textContent = filtered.length;
+      renderTable(filtered);
+    }
+
+    async function loadData() {
+      try {
+        setDebug('กำลังเรียก: ' + SCRIPT_URL);
+        const res = await fetch(SCRIPT_URL);
+        const text = await res.text();
+
+        setDebug('HTTP ' + res.status + '\n\n' + text.slice(0, 500));
+
+        if (!res.ok) {
+          alert("โหลดข้อมูลไม่สำเร็จ (status " + res.status + ")");
+          return;
+        }
+
+        let json;
+        try {
+          json = JSON.parse(text);
+        } catch (e) {
+          alert("ตอบกลับไม่ใช่ JSON (ดูในกล่อง debug ด้านล่าง)");
+          return;
+        }
+
+        if (!Array.isArray(json)) {
+          alert("โครงสร้างข้อมูลไม่ใช่ array (ดู debug)");
+          setDebug('ไม่ใช่ array: ' + JSON.stringify(json, null, 2));
+          return;
+        }
+
+        // JSON จาก API เป็น array ของ object อยู่แล้ว ใช้ตรง ๆ ได้
+        allCases = json;
+
+        document.getElementById("totalCount").textContent = allCases.length;
+        renderTable(allCases);
+
+      } catch (err) {
+        console.error(err);
+        setDebug('ERROR: ' + err.toString());
+        alert("เกิดข้อผิดพลาดในการโหลดข้อมูล (ดู console / debug box)");
+      }
+    }
+
+    function saveNote(id) {
+      if (!id) return;
+      const textarea = document.querySelector(`textarea[data-id="${CSS.escape(id)}"]`);
+      const statusEl = document.getElementById(`status-${id}`);
+      if (!textarea || !statusEl) return;
+
+      const val = textarea.value.trim();
+      userNotes[String(id)] = val;
+      saveUserNotes();
+
+      statusEl.textContent = "บันทึกแล้ว (ในเครื่องนี้)";
+      setTimeout(() => { statusEl.textContent = ""; }, 2000);
+    }
+
+    window.saveNote = saveNote;
+
+    document.getElementById("searchInput").addEventListener("input", applyFilters);
+    document.getElementById("urgencyFilter").addEventListener("change", applyFilters);
+
+    // เริ่มต้น
+    loadUserNotes();
+    loadData();
+  </script>
 </body>
 </html>
